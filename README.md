@@ -41,7 +41,7 @@
 
 ### 1. One-Click Universal Install
 ```bash
-git clone https://github.com/AdhyanshVerma/pooki-pra.git
+git clone https://github.com/AVadhyanshverma/pooki-pra.git
 cd pooki-pra
 ./install.sh
 ```

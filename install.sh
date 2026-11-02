@@ -40,7 +40,7 @@ else
         OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
         ARCH="$(uname -m)"
         TARBALL="pooki-pra-${OS}-${ARCH}.tar.gz"
-        RELEASE_URL="https://github.com/AdhyanshVerma/pooki-pra/releases/latest/download/${TARBALL}"
+        RELEASE_URL="https://github.com/AVadhyanshverma/pooki-pra/releases/latest/download/${TARBALL}"
         curl -fsSL "$RELEASE_URL" -o "/tmp/${TARBALL}" || true
         if [ -f "/tmp/${TARBALL}" ]; then
             tar -xzf "/tmp/${TARBALL}" -C "$BIN_DEST/"
@@ -63,7 +63,7 @@ echo -e "\n${YELLOW}[2/5] Verifying neural decision weights...${NC}"
 mkdir -p "$SCRIPT_DIR/laya"
 if [ ! -f "$SCRIPT_DIR/laya/model_edge_int8.onnx" ] && [ ! -f "$SCRIPT_DIR/laya/model.onnx" ]; then
     echo "Fetching Ultra-Edge INT8 weights from Hugging Face..."
-    curl -fsSL "https://huggingface.co/AdhyanshVerma/pooki-pra-laya-onnx/resolve/main/model_edge_int8.onnx" \
+    curl -fsSL "https://huggingface.co/AdhyanshVerma/browser-laya-onnx/resolve/main/model_int8.onnx" \
         -o "$SCRIPT_DIR/laya/model_edge_int8.onnx" || echo "Model will be downloaded on first run."
 else
     echo -e "${GREEN}✓ Model weights verified.${NC}"
