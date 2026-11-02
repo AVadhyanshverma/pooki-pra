@@ -70,8 +70,23 @@ impl CamoufoxProcess {
 
         let child = cmd.spawn().context("Failed to spawn Camoufox binary")?;
 
-        // Give Firefox 1 second to bind its WebSocket port
-        tokio::time::sleep(tokio::time::Duration::from_millis(1200)).await;
+        // Wait up to 10 seconds for Firefox to bind its WebSocket port
+        let deadline = tokio::time::Instant::now() + tokio::time::Duration::from_secs(10);
+        let mut ready = false;
+        while tokio::time::Instant::now() < deadline {
+            if tokio::net::TcpStream::connect(format!("127.0.0.1:{}", port)).await.is_ok() {
+                ready = true;
+                break;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+        }
+
+        if !ready {
+            return Err(anyhow!("Timed out waiting for Camoufox WebDriver BiDi on port {}", port));
+        }
+
+        // Give BiDi protocol handler a brief moment to finish handshakes
+        tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
 
         Ok(Self {
             child,

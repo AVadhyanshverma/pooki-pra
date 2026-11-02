@@ -16,7 +16,25 @@ pub struct BiDiClient {
 impl BiDiClient {
     pub async fn connect(ws_url: &str) -> Result<Self> {
         info!("Connecting to WebDriver BiDi at {}", ws_url);
-        let (ws_stream, _) = connect_async(ws_url).await.context("Failed to connect to BiDi WebSocket")?;
+        let mut stream = None;
+        let mut last_err = None;
+
+        for _ in 0..15 {
+            match connect_async(ws_url).await {
+                Ok((s, _)) => {
+                    stream = Some(s);
+                    break;
+                }
+                Err(e) => {
+                    last_err = Some(e);
+                    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                }
+            }
+        }
+
+        let ws_stream = stream.ok_or_else(|| {
+            anyhow!("Failed to connect to BiDi WebSocket after retries: {:?}", last_err)
+        })?;
         
         let mut client = Self {
             ws_stream,
