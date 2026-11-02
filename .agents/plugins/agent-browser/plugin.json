@@ -1,0 +1,16 @@
+{
+  "name": "agent-browser",
+  "version": "0.1.0",
+  "description": "Stealth browser automation agent combining Camoufox, GeckoDriver/BiDi, and the Laya System 1 decision model.",
+  "skills": [
+    ".agents/skills/browser-agent"
+  ],
+  "mcp_servers": {
+    "agent-browser": {
+      "command": "/home/adhyansh/.venv/bin/python3",
+      "args": [
+        "/home/adhyansh/Projects/agent-browser/src/mcp/server.py"
+      ]
+    }
+  }
+}

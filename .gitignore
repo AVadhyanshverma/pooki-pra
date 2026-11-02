@@ -1,0 +1,35 @@
+# Rust build artifacts
+target/
+**/target/
+Cargo.lock
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+
+# Large model data weights (Downloadable from Hugging Face)
+laya/model.onnx.data
+laya/*.onnx.data
+laya/model.onnx
+
+# Temporary files & logs
+*.png
+*.jpg
+*.jpeg
+*.log
+.DS_Store
+
+# SQLite runtime databases
+*.db
+*.sqlite
+*.sqlite3
+*-shm
+*-wal
+
+# Scrapes output
+scrapes/*.md
+!scrapes/README.md
+laya/*.onnx

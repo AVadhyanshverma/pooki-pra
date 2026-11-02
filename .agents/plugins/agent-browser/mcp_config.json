@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "agent-browser": {
+      "command": "/home/adhyansh/.venv/bin/python",
+      "args": [
+        "/home/adhyansh/Projects/agent-browser/src/mcp/server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "/home/adhyansh/Projects/agent-browser"
+      }
+    }
+  }
+}
