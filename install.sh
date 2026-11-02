@@ -30,11 +30,11 @@ echo -e "${YELLOW}[1/5] Setting up native Rust binary (pooki-pra)...${NC}"
 if [ -d "$SCRIPT_DIR/crates/pooki-pra" ] && command -v cargo &>/dev/null; then
     echo "Compiling pooki-pra release binary from source..."
     (cd "$SCRIPT_DIR/crates/pooki-pra" && cargo build --release)
-    cp "$SCRIPT_DIR/crates/pooki-pra/target/release/pooki-pra" "$BIN_DEST/pooki-pra"
+    install -m 755 "$SCRIPT_DIR/crates/pooki-pra/target/release/pooki-pra" "$BIN_DEST/pooki-pra"
 else
     echo "Checking for pre-compiled binary..."
     if [ -f "$SCRIPT_DIR/crates/pooki-pra/target/release/pooki-pra" ]; then
-        cp "$SCRIPT_DIR/crates/pooki-pra/target/release/pooki-pra" "$BIN_DEST/pooki-pra"
+        install -m 755 "$SCRIPT_DIR/crates/pooki-pra/target/release/pooki-pra" "$BIN_DEST/pooki-pra"
     else
         echo "Attempting to download pre-built release binary..."
         OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -43,8 +43,9 @@ else
         RELEASE_URL="https://github.com/AVadhyanshverma/pooki-pra/releases/latest/download/${TARBALL}"
         curl -fsSL "$RELEASE_URL" -o "/tmp/${TARBALL}" || true
         if [ -f "/tmp/${TARBALL}" ]; then
-            tar -xzf "/tmp/${TARBALL}" -C "$BIN_DEST/"
-            rm -f "/tmp/${TARBALL}"
+            tar -xzf "/tmp/${TARBALL}" -C "/tmp/"
+            install -m 755 "/tmp/pooki-pra" "$BIN_DEST/pooki-pra"
+            rm -f "/tmp/${TARBALL}" "/tmp/pooki-pra"
         fi
     fi
 fi
@@ -61,20 +62,65 @@ fi
 # 3. Model Weights Verification
 echo -e "\n${YELLOW}[2/5] Verifying neural decision weights...${NC}"
 mkdir -p "$SCRIPT_DIR/laya"
-if [ ! -f "$SCRIPT_DIR/laya/model_edge_int8.onnx" ] && [ ! -f "$SCRIPT_DIR/laya/model.onnx" ]; then
-    echo "Fetching Ultra-Edge INT8 weights from Hugging Face..."
-    curl -fsSL "https://huggingface.co/AdhyanshVerma/browser-laya-onnx/resolve/main/model_int8.onnx" \
-        -o "$SCRIPT_DIR/laya/model_edge_int8.onnx" || echo "Model will be downloaded on first run."
+MODEL_FILE="$SCRIPT_DIR/laya/model_edge_int8.onnx"
+if [ ! -f "$MODEL_FILE" ] && [ ! -f "$SCRIPT_DIR/laya/model.onnx" ]; then
+    echo "Fetching Ultra-Edge INT8 weights (310 MB) from Hugging Face..."
+    curl -fL --progress-bar "https://huggingface.co/AdhyanshVerma/browser-laya-onnx/resolve/main/model_int8.onnx" \
+        -o "$MODEL_FILE"
+    ln -sf "model_edge_int8.onnx" "$SCRIPT_DIR/laya/model.onnx"
+    echo -e "${GREEN}✓ INT8 Model weights downloaded successfully.${NC}"
 else
+    if [ ! -f "$SCRIPT_DIR/laya/model.onnx" ] && [ -f "$MODEL_FILE" ]; then
+        ln -sf "model_edge_int8.onnx" "$SCRIPT_DIR/laya/model.onnx"
+    fi
     echo -e "${GREEN}✓ Model weights verified.${NC}"
 fi
 
 # 4. Anti-Detect Engine (Camoufox)
 echo -e "\n${YELLOW}[3/5] Verifying Camoufox anti-detect engine...${NC}"
-if [ -d "$HOME/.cache/camoufox/browsers/official" ]; then
-    echo -e "${GREEN}✓ Camoufox stealth browser detected in cache.${NC}"
+CAMOU_DIR="$HOME/.cache/camoufox/browsers/official"
+CAMOU_BIN=$(find "$CAMOU_DIR" -name "camoufox-bin" 2>/dev/null | head -n 1)
+
+if [ -n "$CAMOU_BIN" ] && [ -x "$CAMOU_BIN" ]; then
+    echo -e "${GREEN}✓ Camoufox stealth browser detected at: $CAMOU_BIN${NC}"
 else
-    echo "Camoufox will auto-fetch during first browser invocation."
+    echo "Camoufox stealth browser not found. Auto-fetching official release..."
+    OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    ARCH="$(uname -m)"
+    
+    case "$OS" in
+        linux*)   CAMOU_OS="lin" ;;
+        darwin*)  CAMOU_OS="mac" ;;
+        msys*|mingw*|cygwin*) CAMOU_OS="win" ;;
+        *)        CAMOU_OS="lin" ;;
+    esac
+    
+    case "$ARCH" in
+        x86_64|amd64) CAMOU_ARCH="x86_64" ;;
+        aarch64|arm64) CAMOU_ARCH="arm64" ;;
+        *)             CAMOU_ARCH="x86_64" ;;
+    esac
+
+    VERSION="158.0.1-beta.41"
+    ZIP_NAME="camoufox-${VERSION}-${CAMOU_OS}.${CAMOU_ARCH}.zip"
+    DOWNLOAD_URL="https://github.com/daijro/camoufox/releases/download/v${VERSION}/${ZIP_NAME}"
+    TARGET_DIR="$CAMOU_DIR/${VERSION}"
+
+    mkdir -p "$TARGET_DIR"
+    echo "Downloading ${ZIP_NAME} from GitHub..."
+    TMP_ZIP="/tmp/${ZIP_NAME}"
+    curl -fL --progress-bar "$DOWNLOAD_URL" -o "$TMP_ZIP"
+    
+    echo "Extracting into $TARGET_DIR..."
+    if command -v unzip &>/dev/null; then
+        unzip -q -o "$TMP_ZIP" -d "$TARGET_DIR"
+    else
+        python3 -m zipfile -e "$TMP_ZIP" "$TARGET_DIR"
+    fi
+    rm -f "$TMP_ZIP"
+    
+    chmod +x "$TARGET_DIR/camoufox" "$TARGET_DIR/camoufox-bin" 2>/dev/null || true
+    echo -e "${GREEN}✓ Camoufox anti-detect engine installed successfully.${NC}"
 fi
 
 # 5. Global SQLite Database Setup
